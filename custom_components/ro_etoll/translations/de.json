@@ -1,0 +1,64 @@
+{
+  "title": "ro-etoll",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to ro-etoll",
+        "description": "Use the account from portal.etoll.ro. Complete account verification, select a current profile and add your vehicles on the portal first. ROeID-only or interactive MFA login is not supported.",
+        "data": {
+          "username": "Benutzername (E-Mail)",
+          "password": "Passwort",
+          "update_interval": "Aktualisierungsintervall",
+          "istoric_tranzactii": "Transaktionsverlauf"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in to eToll again",
+        "description": "Enter the current email and password you use at portal.etoll.ro.",
+        "data": {
+          "username": "eToll email / username",
+          "password": "Neues Passwort"
+        }
+      },
+      "reconfigure": {
+        "title": "Change eToll account credentials",
+        "description": "Enter the email and password you use at portal.etoll.ro.",
+        "data": {
+          "username": "eToll email / username",
+          "password": "Neues Passwort"
+        }
+      }
+    },
+    "error": {
+      "authentication_failed": "eToll rejected the credentials. Confirm that login works in the portal and complete any account verification there.",
+      "auth_unsupported": "eToll requires an interactive login or does not allow password authentication for this client. This authentication method is not supported.",
+      "profile_required": "Create and select your current profile in the eToll portal, then try again.",
+      "cannot_connect": "eToll is unreachable, temporarily unavailable, or rate limiting requests. Try again later.",
+      "invalid_response": "eToll returned an unexpected response. The portal API may have changed.",
+      "invalid_update_interval": "Use a whole number from 300 to 86400 seconds.",
+      "invalid_history": "Use a whole number from 1 to 10 years."
+    },
+    "abort": {
+      "already_configured": "This eToll account is already configured.",
+      "reauth_successful": "eToll credentials updated.",
+      "reconfigure_successful": "eToll credentials updated.",
+      "entry_missing": "The integration entry no longer exists."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "eToll polling settings",
+        "description": "Poll the portal periodically and choose the invoice history period.",
+        "data": {
+          "update_interval": "Update interval (seconds)",
+          "istoric_tranzactii": "Invoice history (years)"
+        }
+      }
+    },
+    "error": {
+      "invalid_update_interval": "Use a whole number from 300 to 86400 seconds.",
+      "invalid_history": "Use a whole number from 1 to 10 years."
+    }
+  }
+}
