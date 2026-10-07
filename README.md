@@ -8,13 +8,6 @@ Verifică valabilitatea rovinietei, data expirării și numărul de zile rămase
 consultă totalurile facturilor și creează notificări de reînnoire direct din
 Home Assistant.
 
-**Întreținut de:** [Kosztyk](https://github.com/Kosztyk) ·
-**Versiune:** `3.0.0-beta.4` ·
-**Proiect pe GitHub:** [Kosztyk/ro-etoll](https://github.com/Kosztyk/ro-etoll)
-
-> Integrarea este în versiune beta. Soldul peajelor și istoricul trecerilor depind
-> de datele furnizate de eToll. Dacă serviciul răspunde cu `UNAVAILABLE`, senzorii
-> respectivi rămân indisponibili. Monitorizarea rovinietei continuă independent.
 
 ## Funcționalități
 
