@@ -5,7 +5,14 @@ from collections import Counter
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_ISTORIC_TRANZACTII, CONF_UPDATE_INTERVAL, DOMAIN, VERSION
+from .const import (
+    CONF_EXPIRY_WARNING_DAYS,
+    CONF_ISTORIC_TRANZACTII,
+    CONF_STALE_AFTER_HOURS,
+    CONF_UPDATE_INTERVAL,
+    DOMAIN,
+    VERSION,
+)
 from .helpers import section_items, section_status
 
 
@@ -24,7 +31,12 @@ async def async_get_config_entry_diagnostics(
         else False,
         "settings": {
             key: entry.options.get(key)
-            for key in (CONF_UPDATE_INTERVAL, CONF_ISTORIC_TRANZACTII)
+            for key in (
+                CONF_UPDATE_INTERVAL,
+                CONF_ISTORIC_TRANZACTII,
+                CONF_EXPIRY_WARNING_DAYS,
+                CONF_STALE_AFTER_HOURS,
+            )
         },
         "counts": {
             "vehicles": len(data.get("vehicles", [])),
@@ -35,7 +47,21 @@ async def async_get_config_entry_diagnostics(
                 section_items(v, "bridge") is not None for v in verification
             ),
             "invoices": len(invoices) if invoices is not None else None,
+            "notification_summary": data.get("notification_count"),
+            "notifications": len(data["notifications"])
+            if data.get("notifications") is not None
+            else None,
+            "services": len(data["services"])
+            if data.get("services") is not None
+            else None,
         },
+        "source_last_success": {
+            key: value.isoformat()
+            for key, value in coordinator.source_last_success.items()
+        }
+        if coordinator
+        else {},
+        "source_status": dict(coordinator.source_status) if coordinator else {},
         "failed_sections": data.get("failed_sections", []),
         "verification_status_counts": {
             section: dict(

@@ -17,7 +17,15 @@ from urllib.parse import urlsplit
 
 import aiohttp
 
-from .const import BASE_URL, CLIENT_ID, MAX_PAGES, PAGE_SIZE, REQUEST_TIMEOUT, TOKEN_URL
+from .const import (
+    BASE_URL,
+    CLIENT_ID,
+    MAX_PAGES,
+    PAGE_SIZE,
+    REQUEST_TIMEOUT,
+    SERVICE_STATUSES,
+    TOKEN_URL,
+)
 from .exceptions import (
     RoEtollApiError,
     RoEtollAuthError,
@@ -175,6 +183,9 @@ class RoEtollAPI:
             ("GET", "/api/profiles"),
             ("GET", "/api/vehicles"),
             ("GET", "/api/invoices"),
+            ("GET", "/api/notifications"),
+            ("GET", "/api/notifications/summary"),
+            ("GET", "/api/tolls"),
             ("GET", "/api/resources/countries"),
             ("POST", "/api/tolls/verification"),
         }
@@ -220,6 +231,8 @@ class RoEtollAPI:
         result: list[dict] = []
         for _ in range(MAX_PAGES):
             data = await self._request("GET", path, params=params)
+            if isinstance(data, dict) and data.get("errors"):
+                raise RoEtollApiError("eToll returned an incomplete collection.")
             result.extend(self._items(data, key))
             cursor = data.get("nextCursor") if isinstance(data, dict) else None
             if cursor is None or cursor == "":
@@ -346,6 +359,53 @@ class RoEtollAPI:
                 .replace("+00:00", "Z")
             )
 
-        return await self._collection(
-            "/api/invoices", "invoices", {"from": iso(start), "to": iso(end)}
+        return self._deduplicate(
+            await self._collection(
+                "/api/invoices", "invoices", {"from": iso(start), "to": iso(end)}
+            )
         )
+
+    @staticmethod
+    def _deduplicate(items: list[dict]) -> list[dict]:
+        """Avoid counting records repeated across cursor pages twice."""
+        seen: dict[str, dict] = {}
+        result = []
+        for item in items:
+            identifier = item.get("id")
+            if identifier is not None:
+                key = str(identifier)
+                if key in seen:
+                    if seen[key] != item:
+                        raise RoEtollApiError(
+                            "eToll changed a record during pagination."
+                        )
+                    continue
+                seen[key] = item
+            result.append(item)
+        return result
+
+    async def get_notification_count(self) -> int:
+        data = await self._request("GET", "/api/notifications/summary")
+        count = data.get("count") if isinstance(data, dict) else None
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise RoEtollApiError("eToll returned an invalid notification count.")
+        return count
+
+    async def get_notifications(self) -> list[dict]:
+        """Read notifications without changing their status."""
+        return self._deduplicate(
+            await self._collection("/api/notifications", "notifications")
+        )
+
+    async def get_services(self) -> list[dict]:
+        """Fetch all current-profile services, including their explicit status."""
+        items = self._deduplicate(
+            await self._collection("/api/tolls", "tolls", {"size": PAGE_SIZE})
+        )
+        if any(
+            not isinstance(item.get("status"), str)
+            or item["status"] not in SERVICE_STATUSES
+            for item in items
+        ):
+            raise RoEtollApiError("eToll returned an unknown service status.")
+        return items

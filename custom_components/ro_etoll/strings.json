@@ -1,15 +1,17 @@
 {
-  "title": "ro-etoll",
+  "title": "ro_etoll",
   "config": {
     "step": {
       "user": {
-        "title": "Connect to ro-etoll",
+        "title": "Connect to ro_etoll",
         "description": "Use the account from portal.etoll.ro. Complete account verification, select a current profile and add your vehicles on the portal first. ROeID-only or interactive MFA login is not supported.",
         "data": {
           "username": "eToll email / username",
           "password": "eToll password",
           "update_interval": "Update interval (seconds)",
-          "istoric_tranzactii": "Invoice history (years)"
+          "istoric_tranzactii": "Invoice history (years)",
+          "expiry_warning_days": "Expiry warning (days)",
+          "stale_after_hours": "Stale-data threshold (hours)"
         }
       },
       "reauth_confirm": {
@@ -36,7 +38,9 @@
       "cannot_connect": "eToll is unreachable, temporarily unavailable, or rate limiting requests. Try again later.",
       "invalid_response": "eToll returned an unexpected response. The portal API may have changed.",
       "invalid_update_interval": "Use a whole number from 300 to 86400 seconds.",
-      "invalid_history": "Use a whole number from 1 to 10 years."
+      "invalid_history": "Use a whole number from 1 to 10 years.",
+      "invalid_warning_days": "Use a whole number from 1 to 365 days.",
+      "invalid_stale_hours": "Use a whole number from 1 to 168 hours."
     },
     "abort": {
       "already_configured": "This eToll account is already configured.",
@@ -52,13 +56,17 @@
         "description": "Poll the portal periodically and choose the invoice history period.",
         "data": {
           "update_interval": "Update interval (seconds)",
-          "istoric_tranzactii": "Invoice history (years)"
+          "istoric_tranzactii": "Invoice history (years)",
+          "expiry_warning_days": "Expiry warning (days)",
+          "stale_after_hours": "Stale-data threshold (hours)"
         }
       }
     },
     "error": {
       "invalid_update_interval": "Use a whole number from 300 to 86400 seconds.",
-      "invalid_history": "Use a whole number from 1 to 10 years."
+      "invalid_history": "Use a whole number from 1 to 10 years.",
+      "invalid_warning_days": "Use a whole number from 1 to 365 days.",
+      "invalid_stale_hours": "Use a whole number from 1 to 168 hours."
     }
   }
 }

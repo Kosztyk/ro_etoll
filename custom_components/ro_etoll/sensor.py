@@ -1,4 +1,4 @@
-"""ro-etoll sensors backed by verified portal responses."""
+"""ro_etoll sensors backed by verified portal responses."""
 
 from __future__ import annotations
 
@@ -10,24 +10,33 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .account_sensors import (
+    InvoiceTotalSensor,
+    LatestInvoiceSensor,
+    LatestNotificationSensor,
+    LatestPurchaseSensor,
+    NotificationCountSensor,
+    PurchasedServicesSensor,
+    SourceUpdateSensor,
+    VehicleCountSensor,
+)
 from .const import (
-    ATTRIBUTION,
     CONF_ISTORIC_TRANZACTII,
+    DATA_SOURCES,
     DOMAIN,
     ISTORIC_TRANZACTII_DEFAULT,
     MAX_ATTR_TRECERI,
     PORTAL_URL,
-    VERSION,
 )
 from .coordinator import RoEtollCoordinator
+from .entity import RoEtollEntity
 from .helpers import (
     bridge_balance,
     bridge_crossings,
     item_active,
+    next_vignette,
     numeric,
     parse_datetime,
     sanitize_plate_no,
@@ -96,6 +105,35 @@ async def async_setup_entry(
             RaportTranzactiiSensor(
                 coordinator, config_entry, unique_id("raport_tranzactii")
             ),
+            VehicleCountSensor(coordinator, config_entry, unique_id("vehicle_count")),
+            NotificationCountSensor(
+                coordinator, config_entry, unique_id("notification_count")
+            ),
+            LatestNotificationSensor(
+                coordinator, config_entry, unique_id("latest_notification")
+            ),
+            InvoiceTotalSensor(
+                coordinator, config_entry, unique_id("invoice_month"), "month"
+            ),
+            InvoiceTotalSensor(
+                coordinator, config_entry, unique_id("invoice_year"), "year"
+            ),
+            LatestInvoiceSensor(coordinator, config_entry, unique_id("latest_invoice")),
+            PurchasedServicesSensor(
+                coordinator, config_entry, unique_id("purchased_services")
+            ),
+            LatestPurchaseSensor(
+                coordinator, config_entry, unique_id("latest_purchase")
+            ),
+            *[
+                SourceUpdateSensor(
+                    coordinator,
+                    config_entry,
+                    unique_id(f"last_success_{source}"),
+                    source,
+                )
+                for source in DATA_SOURCES
+            ],
         ]
     )
     added: set[str] = set()
@@ -112,6 +150,7 @@ async def async_setup_entry(
                 ("vehicul", VehiculSensor),
                 ("expirare_rovinieta", VignetteExpirySensor),
                 ("zile_rovinieta", VignetteDaysSensor),
+                ("urmatoarea_rovinieta", NextVignetteSensor),
                 ("stare_verificare_peaje", BridgeVerificationStatusSensor),
                 ("treceri_pod", TreceriPodSensor),
                 ("sold_peaje_neexpirate", SoldSensor),
@@ -133,28 +172,8 @@ async def async_setup_entry(
     config_entry.async_on_unload(coordinator.async_add_listener(add_vehicles))
 
 
-class RoEtollBaseSensor(CoordinatorEntity[RoEtollCoordinator], SensorEntity):
-    _attr_has_entity_name = True
-    _attr_attribution = ATTRIBUTION
-
-    def __init__(
-        self, coordinator: RoEtollCoordinator, entry: ConfigEntry, uid: str
-    ) -> None:
-        super().__init__(coordinator)
-        self._config_entry = entry
-        self._attr_unique_id = uid
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._config_entry.entry_id)},
-            name="ro-etoll",
-            manufacturer="Kosztyk",
-            model="ro-etoll",
-            sw_version=VERSION,
-            entry_type=DeviceEntryType.SERVICE,
-            configuration_url=PORTAL_URL,
-        )
+class RoEtollBaseSensor(RoEtollEntity, SensorEntity):
+    """Sensor attached to the integration's account device."""
 
 
 class DateUtilizatorSensor(RoEtollBaseSensor):
@@ -319,6 +338,9 @@ class VehicleSensor(RoEtollBaseSensor):
             "Seria certificatului": vehicle.get("registrationSerial"),
             "Țara": name or country,
             "Categorie vehicul": vehicle.get("category"),
+            "Normă de emisii": vehicle.get("emissionStandard"),
+            "MTMA": vehicle.get("mtma"),
+            "Tip vehicul": vehicle.get("vehicleType"),
         }
 
 
@@ -409,6 +431,47 @@ class VignetteDaysSensor(VehicleSensor):
     @property
     def extra_state_attributes(self) -> dict:
         return self.expiry_attributes()
+
+
+class NextVignetteSensor(VehicleSensor):
+    """Start of an actual future vignette, never an eligibility interval."""
+
+    label = "Început următoare rovinietă"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:calendar-start"
+
+    @property
+    def selected(self) -> dict | None:
+        return next_vignette(self.items("vignette"), datetime.now(timezone.utc))
+
+    @property
+    def available(self) -> bool:
+        items = self.items("vignette")
+        return (
+            super().available
+            and items is not None
+            and all(
+                parse_datetime(item.get("validityStartDate")) is not None
+                and parse_datetime(item.get("validityEndDate"), end_of_day=True)
+                is not None
+                for item in items
+            )
+        )
+
+    @property
+    def native_value(self) -> datetime | None:
+        return parse_datetime((self.selected or {}).get("validityStartDate"))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        item = self.selected or {}
+        end = parse_datetime(item.get("validityEndDate"), end_of_day=True)
+        return {
+            **self.verification_attributes("vignette"),
+            "Rovinietă viitoare disponibilă": bool(item),
+            "Data expirării": end.isoformat() if end else None,
+            "Serie rovinietă": item.get("series"),
+        }
 
 
 class BridgeVerificationStatusSensor(VehicleSensor):

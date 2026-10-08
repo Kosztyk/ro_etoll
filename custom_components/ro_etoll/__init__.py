@@ -1,13 +1,14 @@
-"""ro-etoll Home Assistant integration, maintained by Kosztyk."""
+"""ro_etoll Home Assistant integration, maintained by Kosztyk."""
 
 from __future__ import annotations
 
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import ConfigType
 
 from .api import RoEtollAPI
@@ -49,6 +50,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id, None)
         raise
     entry.async_on_unload(entry.add_update_listener(async_update_entry))
+
+    @callback
+    def update_time_dependent_states(_now) -> None:
+        # Refresh expiry/period/freshness states without another portal request.
+        coordinator.async_update_listeners()
+
+    entry.async_on_unload(
+        async_track_time_interval(
+            hass, update_time_dependent_states, timedelta(minutes=1)
+        )
+    )
     return True
 
 

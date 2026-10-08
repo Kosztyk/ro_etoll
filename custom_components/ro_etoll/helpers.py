@@ -7,6 +7,8 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .const import PURCHASED_STATUSES, SERVICE_STATUSES
+
 ROMANIA_TZ = ZoneInfo("Europe/Bucharest")
 
 
@@ -158,3 +160,92 @@ def bridge_crossings(items: list[dict] | None) -> list[dict] | None:
 def sanitize_plate_no(plate_no: str) -> str:
     """Retain the original integration's unique-ID convention."""
     return plate_no.replace(" ", "_").lower()
+
+
+def invoice_amount(invoice: dict) -> Decimal | None:
+    total = invoice.get("total")
+    return numeric(total.get("totalPrice") if isinstance(total, dict) else total)
+
+
+def period_start(now: datetime, period: str) -> datetime:
+    local = now.astimezone(ROMANIA_TZ)
+    return local.replace(
+        month=1 if period == "year" else local.month,
+        day=1,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    ).astimezone(timezone.utc)
+
+
+def invoice_period_total(
+    invoices: list[dict] | None, now: datetime, period: str
+) -> Decimal | None:
+    """Sum payments in Romanian calendar periods; incomplete values stay unknown."""
+    if invoices is None:
+        return None
+    start = period_start(now, period)
+    total = Decimal(0)
+    for invoice in invoices:
+        paid = parse_datetime(invoice.get("paymentDate"))
+        if paid is None:
+            return None
+        if start <= paid <= now:
+            amount = invoice_amount(invoice)
+            if amount is None:
+                return None
+            total += amount
+    return total
+
+
+def latest_record(items: list[dict] | None, key: str) -> dict | None:
+    """An undated record prevents establishing which record is latest."""
+    if not items:
+        return None
+    dates = [parse_datetime(item.get(key)) for item in items]
+    if any(value is None for value in dates):
+        return None
+    return items[max(range(len(items)), key=lambda index: dates[index])]
+
+
+def purchased_services(items: list[dict] | None) -> list[dict] | None:
+    if items is None or any(
+        not isinstance(item.get("status"), str)
+        or item["status"] not in SERVICE_STATUSES
+        for item in items
+    ):
+        return None
+    return [item for item in items if item["status"] in PURCHASED_STATUSES]
+
+
+def purchase_date(item: dict) -> datetime | None:
+    """Match GetPurchaseDate in the portal client."""
+    kind = item.get("type")
+    if kind in ("VIGNETTE", 0):
+        keys = ("vignetteIssueDate", "ticketCreatedAt")
+    elif kind in ("BRIDGE", 1):
+        keys = ("peajIssueDate", "ticketCreatedAt")
+    elif kind in ("PER_KM", 3):
+        keys = ("ticketCreatedAt", "firstTransactionDate")
+    else:
+        keys = ("ticketCreatedAt",)
+    for key in keys:
+        if item.get(key) is not None:
+            return parse_datetime(item[key])
+    return None
+
+
+def next_vignette(items: list[dict] | None, now: datetime) -> dict | None:
+    if items is None:
+        return None
+    future = [
+        (start, item)
+        for item in items
+        if (start := parse_datetime(item.get("validityStartDate"))) is not None
+        and start > now
+        and (end := parse_datetime(item.get("validityEndDate"), end_of_day=True))
+        is not None
+        and end >= start
+    ]
+    return min(future, key=lambda pair: pair[0])[1] if future else None

@@ -1,4 +1,4 @@
-"""ro-etoll account setup, reauthentication and polling options."""
+"""ro_etoll account setup, reauthentication and polling options."""
 
 from __future__ import annotations
 
@@ -21,10 +21,14 @@ from homeassistant.helpers.selector import (
 
 from .api import RoEtollAPI
 from .const import (
+    CONF_EXPIRY_WARNING_DAYS,
     CONF_ISTORIC_TRANZACTII,
     CONF_PASSWORD,
+    CONF_STALE_AFTER_HOURS,
     CONF_UPDATE_INTERVAL,
     CONF_USERNAME,
+    DEFAULT_EXPIRY_WARNING_DAYS,
+    DEFAULT_STALE_AFTER_HOURS,
     DEFAULT_UPDATE_INTERVAL,
     DOMAIN,
     ISTORIC_TRANZACTII_DEFAULT,
@@ -65,6 +69,18 @@ def options_schema(options: Mapping[str, Any]) -> dict:
             CONF_ISTORIC_TRANZACTII,
             default=options.get(CONF_ISTORIC_TRANZACTII, ISTORIC_TRANZACTII_DEFAULT),
         ): HISTORY,
+        vol.Required(
+            CONF_EXPIRY_WARNING_DAYS,
+            default=options.get(CONF_EXPIRY_WARNING_DAYS, DEFAULT_EXPIRY_WARNING_DAYS),
+        ): NumberSelector(
+            NumberSelectorConfig(min=1, max=365, step=1, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(
+            CONF_STALE_AFTER_HOURS,
+            default=options.get(CONF_STALE_AFTER_HOURS, DEFAULT_STALE_AFTER_HOURS),
+        ): NumberSelector(
+            NumberSelectorConfig(min=1, max=168, step=1, mode=NumberSelectorMode.BOX)
+        ),
     }
 
 
@@ -79,6 +95,20 @@ def validate_options(values: dict) -> tuple[dict, dict]:
             "invalid_update_interval",
         ),
         (CONF_ISTORIC_TRANZACTII, 1, 10, ISTORIC_TRANZACTII_DEFAULT, "invalid_history"),
+        (
+            CONF_EXPIRY_WARNING_DAYS,
+            1,
+            365,
+            DEFAULT_EXPIRY_WARNING_DAYS,
+            "invalid_warning_days",
+        ),
+        (
+            CONF_STALE_AFTER_HOURS,
+            1,
+            168,
+            DEFAULT_STALE_AFTER_HOURS,
+            "invalid_stale_hours",
+        ),
     ):
         value = values.get(key, default)
         try:
@@ -134,7 +164,7 @@ class RoEtollConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             if not errors:
                 return self.async_create_entry(
-                    title=f"ro-etoll ({username})",
+                    title=f"ro_etoll ({username})",
                     data={
                         CONF_USERNAME: username,
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
