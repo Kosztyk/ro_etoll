@@ -29,7 +29,7 @@ def inspect_repository(root: Path = ROOT) -> list[str]:
     license_path = root / "LICENSE"
     if license_path.is_file():
         license_text = license_path.read_text(encoding="utf-8")
-        if not license_text.startswith("MIT License\\n\\n") or (
+        if not license_text.startswith("MIT License") or (
             "Permission is hereby granted, free of charge" not in license_text
             or "Copyright (c) 2024 [cnecrea]" not in license_text
         ):
