@@ -1,7 +1,7 @@
 """Constants for ro_etoll, maintained by Kosztyk."""
 
 DOMAIN = "ro_etoll"
-VERSION = "1.0.0"
+VERSION = "1.0.2"
 ATTRIBUTION = "Date furnizate de portal.etoll.ro"
 BASE_URL = "https://portal.etoll.ro"
 PORTAL_URL = f"{BASE_URL}/portal-extern/"

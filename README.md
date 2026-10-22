@@ -41,17 +41,17 @@ Pentru afișarea pictogramelor și a siglei incluse este necesar
 
 ### Prin HACS, ca depozit personalizat
 
-După publicarea proiectului pe GitHub:
+Pentru instalarea înainte de includerea în catalogul implicit HACS:
 
 1. Deschide **HACS → ⋮ → Depozite personalizate** (`Custom repositories`).
-2. Introdu `https://github.com/Kosztyk/ro-etoll` și selectează tipul **Integrare** (`Integration`).
+2. Introdu `https://github.com/Kosztyk/ro_etoll` și selectează tipul **Integrare** (`Integration`).
 3. Adaugă depozitul, apoi descarcă **ro-etoll** din HACS.
 4. Repornește Home Assistant.
 5. Deschide **Setări → Dispozitive și servicii → Adaugă integrare** și caută **ro-etoll**.
 6. Introdu datele contului eToll și alege setările de actualizare.
 
 Instalarea folosește [funcția HACS pentru depozite personalizate](https://www.hacs.xyz/docs/faq/custom_repositories/).
-Proiectul nu trebuie să fie inclus în catalogul implicit HACS.
+După aprobarea catalogării HACS, integrarea va putea fi găsită direct prin căutare.
 
 ### Instalare manuală
 
@@ -65,7 +65,7 @@ Proiectul nu trebuie să fie inclus în catalogul implicit HACS.
 Dacă arhiva ZIP conține doar componenta, extrage conținutul direct în
 `/config/custom_components/ro_etoll`.
 
-Numele afișat și numele proiectului sunt **ro-etoll**. Domeniul Home Assistant și
+Numele afișat este **RO eToll**. Domeniul Home Assistant și
 folderul componentei sunt **`ro_etoll`**. Păstrează caracterul `_` în numele
 folderului de instalare.
 
@@ -155,8 +155,9 @@ pentru a vedea pictogramele actualizate.
 Actualizează panourile și automatizările pentru a folosi noile entități.
 Redenumirea folderului nu transferă automat configurația între domenii.
 
-Consultă [MIGRATION.md](MIGRATION.md) pentru procedura completă și instrucțiunile
-de revenire la versiunea anterioară.
+Înainte de migrare, fă un backup al configurației și automatizărilor.
+Pentru revenire, reinstalează versiunea anterioară și restabilește backupul.
+Domeniile `erovinieta` și `ro_etoll` nu se migrează automat.
 
 ## Depanare
 
@@ -173,7 +174,7 @@ Când raportezi o problemă, include versiunea integrării, versiunea Home Assis
 liniile relevante din jurnal și fișierul obținut prin **Descarcă datele de diagnosticare**
 al integrării. Nu publica parole, tokenuri sau capturi HAR brute în sesizările publice.
 
-[Raportează o problemă](https://github.com/Kosztyk/ro-etoll/issues) ·
+[Raportează o problemă](https://github.com/Kosztyk/ro_etoll/issues) ·
 [Întrebări frecvente](FAQ.md) · [Ghid de depanare](DEBUG.md)
 
 ## Funcționalități propuse
@@ -202,16 +203,25 @@ oferă urmărirea vehiculului în timp real. Indicatorii de activare a funcțiil
 
 ## Dezvoltare și informații despre proiect
 
-Suita de teste automate pentru beta.4 a trecut **97 de teste**, care acoperă
-autentificarea, paginarea, interpretarea răspunsurilor, verificarea alternativă a
-peajelor, valorile senzorilor, confidențialitatea datelor de diagnostic și blocarea
-operațiunilor interzise care ar modifica datele contului. Consultă [TESTING.md](TESTING.md)
-pentru mediul de testare, constatările din diagnosticarea unei instalări reale și
-comenzile de reproducere a testelor.
+Versiunea **v1.0.2** include verificări automate pentru HACS și Hassfest,
+structura pachetului, metadatele JSON și sintaxa Python.
 
-Integrarea folosește un API al portalului care nu are documentație publică și poate
-necesita actualizări atunci când portalul se modifică. Consultă [API_NOTES.md](API_NOTES.md)
-pentru structurile API analizate, [BRANDING.md](BRANDING.md) pentru detalii despre
-pictograme și siglă, respectiv [ORIGIN.md](ORIGIN.md) pentru istoricul proiectului.
+```bash
+python3 tools/check_repository.py
+python3 -m unittest discover -s tests -v
+python3 -m compileall -q custom_components
+```
 
-Întreținut de **Kosztyk**. Acesta este un proiect comunitar pentru Home Assistant.
+Versiunea beta.4 menționa anterior 97 de teste funcționale, însă sursele
+acestora **nu sunt în depozitul public** și rezultatele istorice nu au fost
+reproduse. Testele din această ediție verifică pachetul și nu necesită un cont
+real eToll. Consultă [VALIDATION.md](VALIDATION.md).
+
+API-urile portalului eToll nu dispun de documentație publică stabilă și
+modificările lor pot necesita actualizarea integrării.
+
+Pentru publicarea HACS, consultă [HACS_PUBLISHING.md](HACS_PUBLISHING.md).
+Istoricul edițiilor: [CHANGELOG.md](CHANGELOG.md).
+Licența originală: [LICENSE.txt](LICENSE.txt).
+
+Întreținut de **Kosztyk**. Proiect comunitar Home Assistant neafiliat CNAIR.
