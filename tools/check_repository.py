@@ -21,11 +21,19 @@ def inspect_repository(root: Path = ROOT) -> list[str]:
     manifest_file = need("custom_components/ro_etoll/manifest.json")
     hacs_file = need("hacs.json")
     version_file = need("custom_components/ro_etoll/const.py")
-    for path in ("README.md","LICENSE.txt",".github/workflows/validate.yml",
+    for path in ("README.md","LICENSE","LICENSE.txt",".github/workflows/validate.yml",
                  "VALIDATION.md","HACS_PUBLISHING.md",
                  "custom_components/ro_etoll/__init__.py",
                  "custom_components/ro_etoll/brand/icon.png"):
         need(path)
+    license_path = root / "LICENSE"
+    if license_path.is_file():
+        license_text = license_path.read_text(encoding="utf-8")
+        if not license_text.startswith("MIT License\\n\\n") or (
+            "Permission is hereby granted, free of charge" not in license_text
+            or "Copyright (c) 2024 [cnecrea]" not in license_text
+        ):
+            errors.append("Standard English MIT license text or original attribution missing")
     if manifest_file.is_file():
         try:
             m = json.loads(manifest_file.read_text(encoding="utf-8"))

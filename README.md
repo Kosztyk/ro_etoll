@@ -222,6 +222,6 @@ modificările lor pot necesita actualizarea integrării.
 
 Pentru publicarea HACS, consultă [HACS_PUBLISHING.md](HACS_PUBLISHING.md).
 Istoricul edițiilor: [CHANGELOG.md](CHANGELOG.md).
-Licența originală: [LICENSE.txt](LICENSE.txt).
+Licența originală: [LICENSE](LICENSE) (versiunea originală tradusă în română: [LICENSE.txt](LICENSE.txt)).
 
 Întreținut de **Kosztyk**. Proiect comunitar Home Assistant neafiliat CNAIR.
