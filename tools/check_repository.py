@@ -21,12 +21,12 @@ def inspect_repository(root: Path = ROOT) -> list[str]:
     manifest_file = need("custom_components/ro_etoll/manifest.json")
     hacs_file = need("hacs.json")
     version_file = need("custom_components/ro_etoll/const.py")
-    for path in ("README.md","LICENSE","docs/licenta-originala-ro.md",".github/workflows/validate.yml",
+    for path in ("README.md","LICENSE.txt","docs/licenta-originala-ro.md",".github/workflows/validate.yml",
                  "VALIDATION.md","HACS_PUBLISHING.md",
                  "custom_components/ro_etoll/__init__.py",
                  "custom_components/ro_etoll/brand/icon.png"):
         need(path)
-    license_path = root / "LICENSE"
+    license_path = root / "LICENSE.txt"
     if license_path.is_file():
         license_text = license_path.read_text(encoding="utf-8")
         if not license_text.startswith("MIT License") or (
